@@ -134,6 +134,40 @@ This README is the quick-start entry point. For architecture decisions, phase de
 
 ---
 
+## Agent Skill ｜ Claude 可安裝技能
+
+This repo ships a Claude-installable skill that enforces the military-grade workflow for any AI coding agent.
+
+### Install
+
+Copy the skill to your Claude skills directory:
+
+```bash
+cp -r .skills/military-grade-workflow ~/.claude/skills/military-grade-workflow
+```
+
+Then invoke it in any Claude Code session:
+
+```
+/military-grade-workflow
+```
+
+### What the skill does
+
+Enforces the full **spec → contract → implement → guard** pipeline and blocks any shortcut:
+
+| File | Purpose |
+|------|---------|
+| `skill.md` | Entry point — workflow steps + on-demand loading table |
+| `references/spec-format.md` | Spec file format rules, loaded when writing a new spec |
+| `references/guard-signals.md` | Guard failure diagnosis table, loaded when a guard fails |
+| `references/phase-boundaries.md` | Phase lock definitions, loaded on startup |
+| `assets/spec.template.md` | Blank spec template to copy from |
+| `scripts/new-spec.sh` | CLI scaffold: creates a spec from template |
+| `scripts/guard-check.sh` | Runs all guards with concise error output |
+
+---
+
 ## Monorepo Structure ｜ Repo 結構
 
 ```
@@ -146,7 +180,8 @@ packages/
 scripts/              → Guard, generator, audit, and deploy scripts
 templates/            → Handlebars page templates (static, dynamic, ppr)
 openspec/             → OpenSpec design documentation
-.skills/              → Agent Skills (source of truth for all AI rules)
+.skills/
+  military-grade-workflow/  → Claude-installable skill (spec→contract→guard pipeline)
 .cursor/rules/        → Cursor adapter (single bridge file pointing to .skills/)
 .ai-audit/            → AI audit log (runtime artifact, not committed)
 .github/workflows/    → CI guard + deploy workflows

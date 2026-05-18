@@ -1,30 +1,17 @@
 ---
-name: military-grade-workflow
-version: "1.0.0"
-description: >
-  軍工級 Vibe Coding 開發流程。強制執行「先寫 spec → 產生 contract → 實作 → guard 全過」的
-  不可跳過管線。適用任何 Next.js / TypeScript monorepo 專案。
-  當使用者說「新增功能」、「建頁面」、「加 API」、「加路由」、「實作」、「建合約」時啟動。
-trigger:
-  - "新增功能"
-  - "建頁面"
-  - "加 API"
-  - "加路由"
-  - "實作"
-  - "add feature"
-  - "create page"
-  - "build something"
-  - "add contract"
-  - "implement"
-allowed-tools: >
-  Bash(npm run *) Read Write Edit Glob Grep TodoWrite
-phases:
-  current: 5
-  locked: [6, 7, 8]
-guard-policy: fail-fast
-spec-root: openspec/changes
-contract-root: packages/contracts
-page-root: "apps/web/app/(dashboard)"
+description: 軍工級 Vibe Coding — 強制 spec→contract→guard 開發流程
+when_to_use: When user wants to add a feature, create a page, implement something, or run the military-grade dev workflow
+user_invocable: true
+argument_hint: "[功能描述 / feature description]"
+allowed_tools:
+  - Bash
+  - Read
+  - Write
+  - Edit
+  - Glob
+  - Grep
+  - TodoWrite
+priority: 8
 ---
 
 # Military-Grade Workflow — 軍工級開發流程
@@ -35,10 +22,25 @@ page-root: "apps/web/app/(dashboard)"
 
 ---
 
+## 按需加載的附屬資源
+
+以下資源在需要時用 Read 工具讀入，不要一開始就全部加載：
+
+| 情境 | 讀取路徑 |
+|------|----------|
+| 需要確認 spec 格式規範 | `references/spec-format.md` |
+| guard 失敗，需要診斷 | `references/guard-signals.md` |
+| 確認當前 phase 邊界 | `references/phase-boundaries.md` |
+| 需要新建 spec 的起點模板 | `assets/spec.template.md` |
+
+路徑相對於本 skill 目錄（`~/.claude/skills/military-grade-workflow/`）。
+
+---
+
 ## 啟動前確認（每次必做）
 
-1. 讀 `openspec/project.md` — 了解架構限制
-2. 確認當前 phase（見 [references/phase-boundaries.md](references/phase-boundaries.md)）
+1. 讀專案的 `openspec/project.md` — 了解架構限制
+2. **按需加載** `references/phase-boundaries.md` — 確認當前 phase
 3. 請求觸碰未來 phase 的內容 → **停止並告知使用者**，不實作
 
 ---
@@ -61,11 +63,15 @@ SPEC → guard:specs → gen:contracts → guard:contracts → IMPL → guard:al
 openspec/changes/<feature-name>/specs/<domain>/<action>.spec.md
 ```
 
-Spec 格式見 [references/spec-format.md](references/spec-format.md)。  
-不確定格式時，用 [assets/spec.template.md](assets/spec.template.md) 作為起點。
+**不確定格式時**：先讀 `references/spec-format.md` 再動筆。  
+**快速建立**：
 
-**必填 frontmatter：** `domain`、`action`、`version`  
-**必填 section：** `## input`、`## success`、`## error`、`## examples`  
+```bash
+bash scripts/new-spec.sh <feature-name> <domain> <action>
+```
+
+Spec 必填 frontmatter：`domain`、`action`、`version`  
+Spec 必填 sections：`## input`、`## success`、`## error`、`## examples`  
 每個 section 必須有 ` ```json ` 區塊。
 
 ---
@@ -76,10 +82,9 @@ Spec 格式見 [references/spec-format.md](references/spec-format.md)。
 npm run guard:specs
 ```
 
-| 結果 | 代表 |
-|------|------|
-| `N passed, 0 failed` | 繼續 |
-| 任何 `✗` | 讀錯誤、修 spec、重跑。**不得繼續到 gen:contracts** |
+`N passed, 0 failed` → 繼續。  
+任何 `✗` → **讀 `references/guard-signals.md` 的 `guard:specs` 區段** → 修 spec → 重跑。  
+不得繼續到 gen:contracts。
 
 ---
 
@@ -89,8 +94,8 @@ npm run guard:specs
 npm run gen:contracts
 ```
 
-成功訊號：`✓ generated packages/contracts/<domain>/<action>.contract.ts`  
-**永遠不要手動編輯 `*.contract.ts` 檔案。** Source of truth 是 spec。
+成功：`✓ generated packages/contracts/<domain>/<action>.contract.ts`  
+**永遠不要手動編輯 `*.contract.ts`。Source of truth 是 spec。**
 
 ---
 
@@ -100,12 +105,7 @@ npm run gen:contracts
 npm run guard:contracts
 ```
 
-| 失敗訊息 | 代表什麼 | 怎麼修 |
-|----------|----------|--------|
-| `valid example failed parse` | `## examples` 的 valid 欄位資料不符 schema | 修 spec examples，重跑 step 3–4 |
-| `invalid example passed` | invalid 欄位實際上合法 | 修成真正違反 schema 的資料 |
-
-詳細診斷見 [references/guard-signals.md](references/guard-signals.md)。
+失敗 → **讀 `references/guard-signals.md` 的 `guard:contracts` 區段** → 對照診斷 → 修 spec examples → 重跑 step 3–4。
 
 ---
 
@@ -115,41 +115,22 @@ npm run guard:contracts
 npm run gen:page -- <name> <type>
 ```
 
-- `name`：kebab-case 路由名，例如 `analytics`
-- `type`：`static` | `dynamic` | `ppr`
-
-成功：`apps/web/app/(dashboard)/<name>/page.tsx` 出現  
-目標已存在 → **不覆蓋，詢問使用者**
+`type`：`static` | `dynamic` | `ppr`  
+目標已存在 → **不覆蓋，詢問使用者。**
 
 ---
 
 ### Step 6 — 實作
 
-規則：
-
 ```
-✓ 從 @vibe/contracts import 型別，不自己手寫 Zod schema
-✓ 所有外部 I/O 用 schema.safeParse(raw)，不用 as 強型別轉換
+✓ 從 @vibe/contracts import 型別
+✓ 所有外部 I/O 用 schema.safeParse(raw)
 ✓ 非同步區塊用 <DynamicSection> 包
 ✓ 風險區塊用 <FaultIsolatedSection> 包
-✓ 沒有真正客戶端需求不加 'use client'
-✓ 3+ 個相關 useState → 改用 useReducer + 型別化 actions
 ✗ 不用 any
-✗ 不跨 phase 邊界
-```
-
-元件 API 速查：
-
-```tsx
-// 風險隔離（一塊壞不拖垮整頁）
-<FaultIsolatedSection
-  enabled={true}
-  errorFallback={<ErrorUI />}
->
-  <DynamicSection fallback={<Skeleton />}>
-    <YourAsyncComponent />
-  </DynamicSection>
-</FaultIsolatedSection>
+✗ 不用 as 強轉型
+✗ 不加不需要的 'use client'
+✗ 3+ useState → 改用 useReducer
 ```
 
 ---
@@ -158,18 +139,16 @@ npm run gen:page -- <name> <type>
 
 ```bash
 npm run guard:all
+# 或用快速腳本（含精簡錯誤輸出）
+bash scripts/guard-check.sh
 ```
 
-依序執行：specs → types → lint → contracts → ppr
-
-全過 → 完成。  
-任何失敗 → 讀 stderr → 修根因 → 重跑。不得 `|| true` 繞過。
+任何失敗 → **讀 `references/guard-signals.md`** 對照錯誤 → 修根因 → 重跑。  
+不得用 `|| true` 繞過。
 
 ---
 
 ### Step 8 — 完成摘要
-
-Guard 全過後，輸出：
 
 ```
 ✓ Spec:     openspec/changes/<name>/specs/<domain>/<action>.spec.md
@@ -182,34 +161,17 @@ Guard 全過後，輸出：
 
 ## 絕對禁止清單
 
-| 禁止行為 | 強制原因 |
-|----------|----------|
+| 禁止 | 原因 |
+|------|------|
 | 沒 spec 就寫 code | 破壞可追溯性 |
 | 手編 `*.contract.ts` | 會被下次 gen 覆蓋 |
 | 用 `as` 轉型外部 I/O | 繞過 runtime 驗證 |
 | 使用 `any` | 破壞 TypeScript strict |
-| 未核准就實作 Phase 6+ | 超出 scope |
-| 用 `|| true` 靜音 guard | 隱藏真實失敗 |
-| 3+ useState 不換 reducer | 狀態機管理破碎 |
+| 用 `\|\| true` 靜音 guard | 隱藏真實失敗 |
+| 未核准就實作鎖定 phase | 超出 scope |
 
 ---
 
-## 狀態機（簡化）
+## 使用者請求
 
-```
-IDLE
-  → 寫 spec → SPEC_WRITTEN
-SPEC_WRITTEN
-  → guard:specs ✓ → SPEC_VALID
-  → guard:specs ✗ → SPEC_WRITTEN（修再跑）
-SPEC_VALID
-  → gen:contracts → CONTRACT_GENERATED
-CONTRACT_GENERATED
-  → guard:contracts ✓ → CONTRACT_VALID
-  → guard:contracts ✗ → SPEC_VALID（修 examples，重 gen）
-CONTRACT_VALID
-  → 實作 → IMPL_DONE
-IMPL_DONE
-  → guard:all ✓ → DONE
-  → guard:all ✗ → IMPL_DONE（修再跑）
-```
+$ARGUMENTS

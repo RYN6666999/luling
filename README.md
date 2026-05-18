@@ -186,3 +186,51 @@ openspec/             → OpenSpec design documentation
 .ai-audit/            → AI audit log (runtime artifact, not committed)
 .github/workflows/    → CI guard + deploy workflows
 ```
+
+---
+
+## Python Version ｜ Python 版
+
+The same military-grade pipeline is available for Python LLM agent projects.
+No TypeScript, no npm — pure Python guards using the same SPEC → guard → contract → IMPL flow.
+
+**Skill file:** [`python-military-grade.md`](https://github.com/RYN6666999/military-grade-dev-skills/blob/main/python-military-grade.md)
+
+### Python Pipeline
+
+```
+SPEC → guard:specs → gen:contracts → guard:contracts → IMPL → guard:all → DONE
+```
+
+```bash
+python3 openspec/scripts/guard_specs.py     # validate spec format
+python3 openspec/scripts/gen_contracts.py   # generate TypedDict + validators
+python3 openspec/scripts/guard_contracts.py # run all examples through validators
+```
+
+### Python Coding Rules
+
+```python
+# ✓ from __future__ import annotations  (Python 3.9 compatible)
+# ✓ All external I/O through validate_*_input()
+# ✓ All output through build_*_success() / build_*_error()
+# ✓ import path: from tools.xxx import  (not from xxx import)
+# ✓ Catch specific exceptions (ValueError, KeyError), no bare except:
+# ✓ Functions < 50 lines, files < 400 lines
+# ✗ No type: ignore without explanation comment
+# ✗ No bare except: (hides real errors)
+# ✗ No cross-scope mutation
+```
+
+### Common Python Guard Errors
+
+| Error | Root Cause | Fix |
+|-------|-----------|-----|
+| `ModuleNotFoundError: No module named 'xxx'` | Missing `tools.` prefix | Change to `from tools.xxx import` |
+| `union type syntax` / `str \| None` at module top level | Python 3.9 unsupported | Add `from __future__ import annotations` |
+| `no validator for domain=X action=Y` | Missing entry in gen_contracts.py | Add TypedDict + validator + add to `_VALIDATORS` |
+| Parallel tool call PRIMARY KEY conflict | INSERT not atomic | Use `INSERT ... SELECT COALESCE(MAX(...)+1, 0)` |
+
+### Real-World Usage
+
+The Python version is actively used in the [gbrain harness](https://github.com/RYN6666999/gbrain) — a 18-tool Python LLM agent with 3 spec domains (skills, inbox) and full guard pipeline. Every new tool goes through: spec file → `guard_specs.py` → `gen_contracts.py` → `guard_contracts.py` → implementation → `guard:all`.

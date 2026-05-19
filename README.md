@@ -1,4 +1,17 @@
-# Military-Grade Vibe Coding Template ｜ 軍工級 Vibe Coding 通用模板框架
+# 律令 ｜ Military-Grade Dev Skills
+
+> 令行禁止，天條不可違。Guard 失敗 → 讀錯誤 → 修根因 → 重跑。永遠不跳過。
+
+**律令**是靈機系統的守門框架。每一個工具、每一個輸出，都必須先過律令的關卡。
+
+| 名號 | 在此 repo 的對應 |
+|------|----------------|
+| **律令** | 本框架 — SPEC → guard → contract → IMPL 流水線 |
+| **煉丹** | skill 鍛造流程 — 按需載入、按需精煉 |
+| **玉簡** | GBrain 腦庫 — 知識載體（另見 [gbrain fork](https://github.com/RYN6666999/gbrain)） |
+| **靈機** | Python 執行層（另見 [harness/](https://github.com/RYN6666999/gbrain/tree/claude/interesting-dijkstra-d61762/harness)） |
+
+---
 
 A monorepo template that brings high-reliability engineering guardrails into AI-assisted frontend development — without the overhead.
 
